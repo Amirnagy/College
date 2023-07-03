@@ -12,11 +12,7 @@ return [
     */
     'locales' => [
         'en',
-        'fr',
-        'es' => [
-            'MX', // mexican spanish
-            'CO', // colombian spanish
-        ],
+        'ar',
     ],
 
     /*
@@ -43,7 +39,7 @@ return [
     | and never fallback to the translator one.
     |
     */
-    'locale' => null,
+    'locale' => 'en',
 
     /*
     |--------------------------------------------------------------------------
@@ -68,7 +64,7 @@ return [
     | locale. Note that 'use_fallback' must be enabled.
     |
      */
-    'use_property_fallback' => true,
+    'use_property_fallback' => false,
 
     /*
     |--------------------------------------------------------------------------
@@ -84,7 +80,7 @@ return [
     | is used first. So "es" will be checked before "es_MX".
     |
     */
-    'fallback_locale' => 'en',
+    'fallback_locale' => null,
 
     /*
     |--------------------------------------------------------------------------

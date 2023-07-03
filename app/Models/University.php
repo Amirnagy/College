@@ -15,7 +15,7 @@ class University extends Model implements TranslatableContract
     use Translatable;
 
     public $translatedAttributes = ['name'];
-    protected $fillable = ['id','name'];
+    protected $fillable = ['id'];
 
 
     public function faculty() {

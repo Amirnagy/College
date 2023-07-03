@@ -3,32 +3,26 @@
 namespace App\Http\Controllers\Api\Auth;
 
 use App\Models\User;
-use Illuminate\Http\Request;
-use App\Http\Controllers\Controller;
-use App\Models\Faculty;
 use App\Models\Student;
+use App\Traits\OtpTrait;
 use App\Models\University;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\App;
+use App\Http\Controllers\Controller;
+use App\Http\Requests\RegisterRequest;
+use App\Traits\InfoStudent;
 use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
-    function register(Request $request) {
-        // try to make request vaildated
-        $validator = Validator::make($request->all(), [
-            'username' => 'required|min:3',
-            'email' => 'required|email|unique:users,email',
-            'phone' => 'regex:/^9665\d{8}$/',
-            'password' => 'required|min:8|confirmed',
-            'university' => 'required',
-            'faculty' => 'required',
-            'department' => 'required'
-        ]);
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
+    use OtpTrait,InfoStudent;
 
+
+
+    function register(RegisterRequest $request) {
+
+        $request->validated();
         $university = University::select('id')->where('id',$request->university)
         ->with(['faculty' => function($query) use ($request)
         {
@@ -44,9 +38,9 @@ class AuthController extends Controller
             $request->merge(['password' => bcrypt($request->password)]);
             $user = User::create([
                 "name"      =>  $request->username,
-                "email" => $request->email,
-                "password" => $request->password,
-                "phone" => $request->phone]);
+                "email"     => $request->email,
+                "password"  => $request->password,
+                "phone"     => $request->phone]);
 
             $students = new Student();
             $students->user_id = $user->id;
@@ -56,33 +50,32 @@ class AuthController extends Controller
             $students->save();
 
             return $this->success($user,'user successfull registered');
-
         } else {
-
             return $this->error('error on university , faculty and department');
         }
-
-
-
     }
 
 
     function login(Request $request) {
-        $validator = Validator::make($request->all(), [
-            'email' => 'required|email',
-            'password' => 'required|min:8',
-        ]);
-        if ($validator->fails()) {
-            return response()->json(['errors' => $validator->errors()], 422);
-        }
 
+        $request->validated();
         $credentials = $request->only('email', 'password');
         if (!Auth::guard('api')->attempt($credentials)) {
             return $this->error("Invalid credentials");
         }
 
         $user = Auth::guard('api')->user();
-        $token = Auth::guard('api')->attempt($credentials);
-            return $this->success(['token'=>$token,'user'=>$user]);
+
+        if($user->email_verified_at)
+        {
+            $token = Auth::guard('api')->attempt($credentials);
+            $university = $this->userDataUniversity($user->id,$request->lang);
+            return $this->success(['token'=>$token,'user'=>$user,"relatedData" => $university]);
+        }
+        {
+            $this->sendOTP($user);
+            return $this->success(0,'please check your mail to varify account');
+        }
     }
+
 }

@@ -19,7 +19,6 @@ class Department extends Model implements TranslatableContract
 
     protected $fillable = [
         'id',
-        'name',
         'university_id',
         'faculty_id'
     ];

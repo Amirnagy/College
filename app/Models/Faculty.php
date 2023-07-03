@@ -19,7 +19,6 @@ class Faculty extends Model implements TranslatableContract
 
     protected $fillable = [
         'id',
-        'name',
         'university_id',
     ];
 
