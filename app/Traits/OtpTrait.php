@@ -36,6 +36,19 @@ trait OtpTrait
 
 
 
+    public function checkOTP($identifier,$token)
+    {
+        $verify = ModelsOtp::where('identifier',$identifier)->first();
+        if ($verify->token == $token)
+        {
+            return true;
+        }
+
+        return false;
+    }
+
+
+
 
 
 

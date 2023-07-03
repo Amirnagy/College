@@ -16,5 +16,5 @@ use Illuminate\Support\Facades\Route;
 */
 Route::post('register',[AuthController::class,'register']);
 Route::post('login',[AuthController::class,'login']);
-Route::post('sendotp',[AuthController::class,'sendOTP']);
+Route::post('varifyotp',[AuthController::class,'varifyUser']);
 // Route::get('university',[])

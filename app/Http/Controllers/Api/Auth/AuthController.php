@@ -6,12 +6,14 @@ use App\Models\User;
 use App\Models\Student;
 use App\Traits\OtpTrait;
 use App\Models\University;
+use App\Traits\InfoStudent;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\App;
 use App\Http\Controllers\Controller;
-use App\Http\Requests\RegisterRequest;
-use App\Traits\InfoStudent;
 use Illuminate\Support\Facades\Auth;
+use App\Http\Requests\RegisterRequest;
+use Carbon\Carbon;
 use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
@@ -75,6 +77,26 @@ class AuthController extends Controller
         {
             $this->sendOTP($user);
             return $this->success(0,'please check your mail to varify account');
+        }
+    }
+
+    public function varifyUser(Request $request)
+    {
+        $user = User::where('email',$request->email)->first();
+        if (!$user) {
+            return $this->error('User not found');
+        }
+        $varifed = $this->checkOTP($user->id,$request->token);
+
+        if($varifed)
+        {
+            //update email verified at time in user table.
+            DB::table('users')
+            ->where('id', $user->id)
+            ->update(["email_verified_at"=>Carbon::now()]);
+            return $this->success(0,'OTP Correct');
+        }else{
+            return $this->error('OTP wrong');
         }
     }
 
