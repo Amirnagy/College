@@ -7,14 +7,16 @@ use App\Models\User;
 use App\Mail\SendOTP;
 use App\Models\Student;
 use App\Models\University;
+use App\Traits\OtpVarifed;
 use App\Traits\InfoStudent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
-use App\Traits\OtpVarifed;
+use App\Http\Resources\UserResource;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
+use App\Http\Resources\User as ResourcesUser;
 
 class AuthController extends Controller
 {
@@ -58,7 +60,8 @@ class AuthController extends Controller
                 "name"      =>  $request->username,
                 "email"     => $request->email,
                 "password"  => $request->password,
-                "phone"     => $request->phone]);
+                "phone"     => $request->phone,
+                "profile_image"=> "UserProfile/3614471688554187profile.png" ]);
 
             $students = new Student();
             $students->user_id = $user->id;
@@ -89,10 +92,11 @@ class AuthController extends Controller
         }
 
         $user = Auth::guard('api')->user();
-
         if($user->email_verified_at)
         {
-            $token = Auth::guard('api')->attempt($credentials);
+            $token = auth('api')->setTTL(604800)->attempt($credentials);
+            $user = new UserResource($user);
+
             $university = $this->userDataUniversity($user->id,$request->lang);
             return $this->success(["verified"=> true,'token'=>$token,'user'=>$user,"relatedData" => $university]);
         }

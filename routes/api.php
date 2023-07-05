@@ -25,6 +25,7 @@ Route::post('reset/sendmail',[ResetController::class,'checkRest']);
 Route::post('reset/varifyotp',[ResetController::class,'checkresetOTP']);
 Route::post('reset/password',[ResetController::class,'resetPassword']);
 
-Route::group(['middleware' => 'api'], function ($router) {
-    Route::post('updateuser',[UserController::class,'update']);
+Route::group(['middleware' => ['api']], function () {
+    Route::post('update/user',[UserController::class,'updateuser']);
+    Route::post('update/password',[UserController::class,'updatepassword']);
 });

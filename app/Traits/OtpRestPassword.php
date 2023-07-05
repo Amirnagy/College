@@ -16,7 +16,7 @@ trait OtpRestPassword
         }
         $otp = new OtpRest();
         $otp->identifier = $identifier;
-        $otp->token = random_int(10000,99999);
+        $otp->token = random_int(100000,999999);
         $otp->expired = Carbon::now()->addMinutes(20)->format('Y-m-d H:i:s');
         $otp->no_times_attempted = 0;
         $otp->generated_at = Carbon::now();
