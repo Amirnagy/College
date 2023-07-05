@@ -2,29 +2,45 @@
 
 namespace App\Http\Controllers\Api\Auth;
 
+use Carbon\Carbon;
 use App\Models\User;
+use App\Mail\SendOTP;
 use App\Models\Student;
-use App\Traits\OtpTrait;
 use App\Models\University;
 use App\Traits\InfoStudent;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\App;
 use App\Http\Controllers\Controller;
+use App\Traits\OtpVarifed;
 use Illuminate\Support\Facades\Auth;
-use App\Http\Requests\RegisterRequest;
-use Carbon\Carbon;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 
 class AuthController extends Controller
 {
-    use OtpTrait,InfoStudent;
+    use OtpVarifed,InfoStudent;
+    public function __construct()
+    {
+        $this->middleware('auth:api', ['except' => ['login','register','varifyUser']]);
+    }
 
 
 
-    function register(RegisterRequest $request) {
+    function register(Request $request)
+    {
 
-        $request->validated();
+        $vaildator = Validator::make($request->all(),[
+            'username' => 'required|min:3',
+            'email' => 'required|email|unique:users,email',
+            'phone' => 'regex:/^9665\d{8}$/|unique:users,phone',
+            'password' => 'required|min:8|confirmed',
+            'university' => 'required',
+            'faculty' => 'required',
+            'department' => 'required'
+        ]);
+            if ($vaildator->fails()) {
+                return response()->json(["messege"=>false,"errors"=>$vaildator->errors()],422);
+            }
         $university = University::select('id')->where('id',$request->university)
         ->with(['faculty' => function($query) use ($request)
         {
@@ -58,9 +74,15 @@ class AuthController extends Controller
     }
 
 
-    function login(Request $request) {
-
-        $request->validated();
+    function login(Request $request)
+    {
+        $vaildator = Validator::make($request->all(),[
+        'email' => 'required|email',
+        'password' => 'required|min:8',
+        'lang' =>'required|max:2|string']);
+        if ($vaildator->fails()) {
+            return response()->json(["messege"=>false,"errors"=>$vaildator->errors()],422);
+        }
         $credentials = $request->only('email', 'password');
         if (!Auth::guard('api')->attempt($credentials)) {
             return $this->error("Invalid credentials");
@@ -72,21 +94,26 @@ class AuthController extends Controller
         {
             $token = Auth::guard('api')->attempt($credentials);
             $university = $this->userDataUniversity($user->id,$request->lang);
-            return $this->success(['token'=>$token,'user'=>$user,"relatedData" => $university]);
+            return $this->success(["verified"=> true,'token'=>$token,'user'=>$user,"relatedData" => $university]);
         }
         {
             $this->sendOTP($user);
-            return $this->success(0,'please check your mail to varify account');
+            return $this->success(["verified"=> false],'please check your mail to varify account');
         }
     }
 
     public function varifyUser(Request $request)
     {
-        $user = User::where('email',$request->email)->first();
-        if (!$user) {
-            return $this->error('User not found');
+        $vaildator = Validator::make($request->all(),[
+        'email' => 'required|email|exists:users,email',
+        "code" => "required|string|min:1|max:6"
+        ]);
+        if ($vaildator->fails())
+        {
+            return response()->json(["messege"=>false,"errors"=>$vaildator->errors()],422);
         }
-        $varifed = $this->checkOTP($user->id,$request->token);
+        $user = User::where('email',$request->email)->first();
+        $varifed = $this->checkOTP($user->id,$request->code);
 
         if($varifed)
         {
@@ -100,4 +127,24 @@ class AuthController extends Controller
         }
     }
 
+
+    public function logout()
+    {
+        auth()->logout();
+
+        return response()->json(['message' => 'Successfully logged out']);
+    }
+
+    public function deleteAccount(Request $request)
+    {
+        try {
+            $user = $request->user();
+            $user->delete();
+        } catch (\Exception $e)
+        {
+            return response()->json(['message' => 'Error deleting account'], 500);
+        }
+
+        return response()->json(['message' => 'Account deleted successfully'],200);
+    }
 }
